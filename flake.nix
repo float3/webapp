@@ -9,15 +9,32 @@
     self,
     nixpkgs,
   }: {
-    packages.x86_64-linux.trolley = nixpkgs.lib.buildPythonApplication {
-      pname = "trolley";
-      version = "1.0";
-      src = ./.;
-      propagatedBuildInputs = with nixpkgs.python312Packages; [flask gunicorn watchdog pyexiftool ffmpeg-python setuptools];
+    packages = {
+      default = nixpkgs.lib.buildPythonApplication {
+        pname = "trolley";
+        version = "1.0";
+        src = ./.;
+        propagatedBuildInputs = with nixpkgs.python312Packages; [
+          gunicorn
+          flask
+          watchdog
+          pyexiftool
+          ffmpeg-python
+        ];
+      };
     };
 
-    devShells.x86_64-linux = nixpkgs.mkShell {
-      buildInputs = with nixpkgs.python312Packages; [flask gunicorn watchdog pyexiftool ffmpeg-python setuptools];
+    devShell = {
+      default = nixpkgs.mkShell {
+        buildInputs = with nixpkgs.pkgs; [
+          python312Full
+          python312Packages.gunicorn
+          python312Packages.flask
+          python312Packages.watchdog
+          python312Packages.pyexiftool
+          python312Packages.ffmpeg-python
+        ];
+      };
     };
   };
 }
