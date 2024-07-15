@@ -16,13 +16,15 @@
         pkgs = import nixpkgs {inherit system;};
       in {
         packages.myapp = pkgs.mkShell {
-          buildInputs = [
-            pkgs.python312Full
-            pkgs.python312Packages.flask
-            pkgs.python312Packages.watchdog
-            pkgs.python312Packages.pillow
-            pkgs.python312Packages.ffmpeg-python
-            pkgs.python312Packages.pyexiftool
+          buildInputs = with pkgs; [
+            python312Full
+            python312Packages.gunicorn
+            python312Packages.flask
+            python312Packages.watchdog
+            python312Packages.pyexiftool
+            python312Packages.ffmpeg-python
+            python312Packages.setuptools
+            python312Packages.pillow
           ];
         };
 
@@ -36,7 +38,7 @@
               enable = true;
               package = self.packages.${system}.myapp;
               serviceConfig = {
-                ExecStart = "${self.packages.${system}.myapp}/bin/python myapp.py";
+                ExecStarht = "${self.packages.${system}.myapp}/bin/gunicorn -c gunicorn_config.py app:app";
                 Restart = "always";
               };
             };
