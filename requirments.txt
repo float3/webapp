@@ -1,0 +1,5 @@
+flask
+gunicorn
+watchdog
+pyexiftool
+ffmpeg-python
