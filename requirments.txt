@@ -3,3 +3,4 @@ gunicorn
 watchdog
 pyexiftool
 ffmpeg-python
+pillow
