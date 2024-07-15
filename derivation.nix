@@ -7,7 +7,7 @@ with python312Packages;
     pname = "trolley";
     version = "1.0";
 
-    propagatedBuildInputs = [flask gunicorn watchdog pyexiftool ffmpeg-python setuptools];
+    propagatedBuildInputs = [flask gunicorn watchdog pyexiftool ffmpeg-python pillow setuptools];
 
     src = ./.;
   }

@@ -8,5 +8,6 @@ pkgs.mkShell {
     python312Packages.pyexiftool
     python312Packages.ffmpeg-python
     python312Packages.setuptools
+    python312Packages.pillow
   ];
 }
