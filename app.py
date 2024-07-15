@@ -82,16 +82,15 @@ class FileEventHandler(FileSystemEventHandler):
                 + 1
             )
 
+            file_extension = event.src_path.split(".")[-1]
             new_file_path = os.path.join(
-                MEDIA_FOLDER, f"{new_file_number}.{event.src_path.split('.')[-1]}"
+                MEDIA_FOLDER, f"{new_file_number}.{file_extension}"
             )
             os.rename(event.src_path, new_file_path)
 
-            # Remove metadata
             with pyexiftool.ExifTool() as et:
                 et.execute("-all=", new_file_path)
 
-            # Re-encode file
             if new_file_path.lower().endswith(".mp4"):
                 self.reencode_video(new_file_path)
             elif new_file_path.lower().endswith(".jpg"):
@@ -125,7 +124,6 @@ def start_observer():
     observer.start()
     try:
         while True:
-            # Keep the thread alive
             threading.Event().wait(1)
     finally:
         observer.stop()
