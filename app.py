@@ -113,6 +113,8 @@ class FileEventHandler(FileSystemEventHandler):
             elif new_file_path.lower().endswith(".jpg"):
                 self.reencode_image(new_file_path)
 
+            os.system("nextcloud-occ files:scan --path=" + MEDIA_FOLDER)
+
         except Exception as e:
             logger.exception(f"Error handling the new file: {e}")
 
