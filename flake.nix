@@ -1,5 +1,5 @@
 {
-  description = "My Application";
+  description = "source for problem.traeumerei.dev";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -15,7 +15,7 @@
       system: let
         pkgs = import nixpkgs {inherit system;};
       in {
-        packages.myapp = pkgs.mkShell {
+        packages.webapp = pkgs.mkShell {
           buildInputs = with pkgs; [
             python312Full
             python312Packages.gunicorn
@@ -28,9 +28,9 @@
           ];
         };
 
-        devShell = self.packages.${system}.myapp;
+        devShell = self.packages.${system}.webapp;
 
-        nixosModules.myapp = {
+        nixosModules.webapp = {
           config = {
             config,
             pkgs,
@@ -43,9 +43,9 @@
 
             services.trolleyserver = {
               enable = true;
-              package = self.packages.${system}.myapp;
+              package = self.packages.${system}.webapp;
               serviceConfig = {
-                ExecStart = "${self.packages.${system}.myapp}/bin/gunicorn -c gunicorn_config.py app:app";
+                ExecStart = "${self.packages.${system}.webapp}/bin/gunicorn -c gunicorn_config.py app:app";
                 Restart = "always";
                 User = "trolley";
                 Group = "trolley";
