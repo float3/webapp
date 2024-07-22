@@ -38,8 +38,10 @@
               enable = true;
               package = self.packages.${system}.myapp;
               serviceConfig = {
-                ExecStarht = "${self.packages.${system}.myapp}/bin/gunicorn -c gunicorn_config.py app:app";
+                ExecStart = "${self.packages.${system}.myapp}/bin/gunicorn -c gunicorn_config.py app:app";
                 Restart = "always";
+                User = "trolley";
+                Group = "trolley";
               };
             };
           };
