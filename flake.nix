@@ -31,9 +31,16 @@
         devShell = self.packages.${system}.myapp;
 
         nixosModules.myapp = {
-          imports = [pkgs.nixosModules.trolley];
-
           config = {
+            config,
+            pkgs,
+            ...
+          }: {
+            users.users.trolley = {
+              isSystemUser = true;
+              createHome = true;
+            };
+
             services.trolleyserver = {
               enable = true;
               package = self.packages.${system}.myapp;
