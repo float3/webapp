@@ -28,7 +28,9 @@ def get_media_files():
         [
             file
             for file in os.listdir(MEDIA_FOLDER)
-            if mime.from_file(os.path.join(MEDIA_FOLDER, file)).startswith(
+            if file
+            and os.path.isfile(os.path.join(MEDIA_FOLDER, file))
+            and mimetypes.guess_type(os.path.join(MEDIA_FOLDER, file))[0].startswith(
                 ("video/", "image/")
             )
         ]
