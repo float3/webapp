@@ -2,3 +2,7 @@ result
 venv
 __pycache__
 .idea
+build
+dist
+trolley.egg-info
+.idea

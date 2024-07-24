@@ -3,4 +3,3 @@ pillow
 watchdog
 setuptools
 gunicorn
-python-ffmpeg

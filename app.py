@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
 import logging
+import mimetypes
 import os
 import random
+import subprocess
 import threading
 
-import exiftool
-from ffmpeg import FFmpeg
 from flask import Flask, abort, redirect, send_file
 from PIL import Image
 from watchdog.events import FileSystemEventHandler
@@ -22,55 +22,31 @@ app = Flask(__name__)
 MEDIA_FOLDER = "/mnt/volume/nextcloud/data/hill/files/Photos/trolley/"
 
 
-@app.route("/")
-def serve_random_media():
-    try:
-        media_files = [
+def get_media_files():
+    return sorted(
+        [
             file
             for file in os.listdir(MEDIA_FOLDER)
-            if file.lower().endswith(
-                (".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".webp", ".mp4")
-            )
+            if mimetypes.guess_type(file)[0]
+            and mimetypes.guess_type(file)[0].startswith(("video/", "image/"))
         ]
-        if not media_files:
-            logger.warning("No media files found in the directory.")
-            abort(404, description="No media files found in the directory.")
-        random_file = random.choice(media_files)
+    )
 
-        number = random_file.split(".")[0]
-        file_path = None
-        for ext in ["jpg", "mp4"]:
-            potential_path = os.path.join(MEDIA_FOLDER, f"{number}.{ext}")
-            if os.path.isfile(potential_path):
-                file_path = potential_path
-                break
 
-        if not file_path:
-            logger.error(f"File not found: {random_file}")
-            abort(404, description="File not found.")
-        return send_file(file_path)
-    except Exception as e:
-        logger.exception("Error serving random media")
-        abort(500, description=str(e))
+@app.route("/")
+def serve_random_media():
+    random_number = random.randint(0, len(get_media_files()) - 1)
+    return serve_numbered_media(random_number)
 
 
 @app.route("/<int:number>")
 def serve_numbered_media(number):
-    try:
-        file_path = None
-        for ext in ["jpg", "mp4"]:
-            potential_path = os.path.join(MEDIA_FOLDER, f"{number}.{ext}")
-            if os.path.isfile(potential_path):
-                file_path = potential_path
-                break
+    media_files = get_media_files()
+    if number < 0 or number >= len(media_files):
+        abort(404)
 
-        if not file_path:
-            logger.error(f"File not found: {number}")
-            abort(404, description="File not found.")
-        return send_file(file_path)
-    except Exception as e:
-        logger.exception("Error serving numbered media")
-        abort(500, description=str(e))
+    media_file = media_files[number]
+    return send_file(os.path.join(MEDIA_FOLDER, media_file))
 
 
 @app.route("/submit")
@@ -87,33 +63,25 @@ class FileEventHandler(FileSystemEventHandler):
     def on_created(self, event):
         try:
             logger.info(f"New file {event.src_path} has been created.")
-            new_file_number = (
-                max(
-                    [
-                        int(file.split(".")[0])
-                        for file in os.listdir(MEDIA_FOLDER)
-                        if file.lower().endswith((".jpg", ".mp4"))
-                        and file != os.path.basename(event.src_path)
-                    ]
+            mime_type = mimetypes.guess_type(new_file_path)[0]
+            if mime_type:
+
+                new_file_number = len(get_media_files())
+
+                file_extension = event.src_path.split(".")[-1]
+                new_file_path = os.path.join(
+                    MEDIA_FOLDER, f"{new_file_number}.{file_extension}"
                 )
-                + 1
-            )
+                os.rename(event.src_path, new_file_path)
 
-            file_extension = event.src_path.split(".")[-1]
-            new_file_path = os.path.join(
-                MEDIA_FOLDER, f"{new_file_number}.{file_extension}"
-            )
-            os.rename(event.src_path, new_file_path)
+                subprocess.run(["exiftool", "-all=", new_file_path], check=True)
 
-            with exiftool.ExifTool() as et:
-                et.execute("-all=", new_file_path)
+                if mime_type.startswith("video/"):
+                    self.reencode_video(new_file_path)
+                if mime_type.startswith("image/"):
+                    self.reencode_image(new_file_path)
 
-            if new_file_path.lower().endswith(".mp4"):
-                self.reencode_video(new_file_path)
-            elif new_file_path.lower().endswith(".jpg"):
-                self.reencode_image(new_file_path)
-
-            os.system("nextcloud-occ files:scan --path=" + MEDIA_FOLDER)
+                os.system("nextcloud-occ files:scan --path=" + MEDIA_FOLDER)
 
         except Exception as e:
             logger.exception(f"Error handling the new file: {e}")
@@ -122,7 +90,7 @@ class FileEventHandler(FileSystemEventHandler):
     def reencode_video(file_path):
         try:
             temp_file = f"{file_path}.temp.mp4"
-            FFmpeg().input(file_path).output(temp_file).execute()
+            subprocess.run(["ffmpeg", "-i", file_path, temp_file], check=True)
             os.replace(temp_file, file_path)
             logger.info(f"Video re-encoded and saved as {file_path}")
         except Exception as e:
@@ -131,8 +99,10 @@ class FileEventHandler(FileSystemEventHandler):
     @staticmethod
     def reencode_image(file_path):
         try:
+            temp_file = f"{file_path}.temp.png"
             img = Image.open(file_path)
-            img.save(file_path, "JPEG")
+            img.save(temp_file, "PNG")
+            os.replace(temp_file, file_path)
             logger.info(f"Image re-encoded and saved as {file_path}")
         except Exception as e:
             logger.exception(f"Error re-encoding image: {e}")
@@ -141,7 +111,7 @@ class FileEventHandler(FileSystemEventHandler):
 def start_observer():
     event_handler = FileEventHandler()
     observer = Observer()
-    observer.schedule(event_handler, MEDIA_FOLDER, recursive=False)
+    observer.schedule(event_handler, MEDIA_FOLDER, recursive=True)
     observer.start()
     logger.info("File observer started")
     try:
