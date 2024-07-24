@@ -7,7 +7,7 @@ with python312Packages;
     pname = "trolley";
     version = "1.0";
 
-    propagatedBuildInputs = [flask gunicorn watchdog pillow setuptools];
+    propagatedBuildInputs = [flask gunicorn watchdog pillow setuptools python-magic];
 
     src = ./.;
   }

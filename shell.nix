@@ -9,5 +9,6 @@ pkgs.mkShell {
     python312Packages.watchdog
     python312Packages.setuptools
     python312Packages.pillow
+    python312Packages.python-magic
   ];
 }

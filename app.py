@@ -7,12 +7,12 @@ import random
 import subprocess
 import threading
 
+import magic
 from flask import Flask, abort, redirect, send_file
 from PIL import Image
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 MEDIA_FOLDER = "/mnt/volume/nextcloud/data/hill/files/Photos/trolley/"
+mime = magic.Magic(mime=True)
 
 
 def get_media_files():
@@ -27,8 +28,7 @@ def get_media_files():
         [
             file
             for file in os.listdir(MEDIA_FOLDER)
-            if mimetypes.guess_type(os.path.join(MEDIA_FOLDER, file))[0]
-            and mimetypes.guess_type(os.path.join(MEDIA_FOLDER, file))[0].startswith(
+            if mime.from_file(os.path.join(MEDIA_FOLDER, file)).startswith(
                 ("video/", "image/")
             )
         ]
@@ -67,14 +67,14 @@ def add_security_headers(response):
 
 def start_webserver():
     logger.info("Starting web server")
-    app.run(host="0.0.0.0", port=8080)
+    app.run(host="127.0.0.1", port=8080)
 
 
 class FileEventHandler(FileSystemEventHandler):
     def on_created(self, event):
         try:
             logger.info(f"New file {event.src_path} has been created.")
-            mime_type = mimetypes.guess_type(event.src_path)[0]
+            mime_type = mime.from_file(event.src_path)
             if mime_type:
                 new_file_number = len(get_media_files())
                 file_extension = event.src_path.split(".")[-1]
