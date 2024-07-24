@@ -27,8 +27,10 @@ def get_media_files():
         [
             file
             for file in os.listdir(MEDIA_FOLDER)
-            if mimetypes.guess_type(file)[0]
-            and mimetypes.guess_type(file)[0].startswith(("video/", "image/"))
+            if mimetypes.guess_type(os.path.join(MEDIA_FOLDER, file))[0]
+            and mimetypes.guess_type(os.path.join(MEDIA_FOLDER, file))[0].startswith(
+                ("video/", "image/")
+            )
         ]
     )
 
@@ -54,6 +56,15 @@ def submit_media():
     return redirect("https://nextcloud.traeumerei.dev/s/2RkCmriHeFG8dFF")
 
 
+@app.after_request
+def add_security_headers(response):
+    response.headers["Content-Security-Policy"] = "default-src 'self'"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    return response
+
+
 def start_webserver():
     logger.info("Starting web server")
     app.run(host="0.0.0.0", port=8080)
@@ -63,17 +74,14 @@ class FileEventHandler(FileSystemEventHandler):
     def on_created(self, event):
         try:
             logger.info(f"New file {event.src_path} has been created.")
-            mime_type = mimetypes.guess_type(new_file_path)[0]
+            mime_type = mimetypes.guess_type(event.src_path)[0]
             if mime_type:
-
                 new_file_number = len(get_media_files())
-
                 file_extension = event.src_path.split(".")[-1]
                 new_file_path = os.path.join(
                     MEDIA_FOLDER, f"{new_file_number}.{file_extension}"
                 )
                 os.rename(event.src_path, new_file_path)
-
                 subprocess.run(["exiftool", "-all=", new_file_path], check=True)
 
                 if mime_type.startswith("video/"):
@@ -81,10 +89,16 @@ class FileEventHandler(FileSystemEventHandler):
                 if mime_type.startswith("image/"):
                     self.reencode_image(new_file_path)
 
-                os.system("nextcloud-occ files:scan --path=" + MEDIA_FOLDER)
+                self.scan_files()
 
         except Exception as e:
             logger.exception(f"Error handling the new file: {e}")
+
+    @staticmethod
+    def scan_files():
+        subprocess.run(
+            ["nextcloud-occ", "files:scan", "--path", MEDIA_FOLDER], check=True
+        )
 
     @staticmethod
     def reencode_video(file_path):
