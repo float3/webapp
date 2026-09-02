@@ -93,8 +93,8 @@ class FileEventHandler(FileSystemEventHandler):
 
                 self.scan_files()
 
-        except Exception as e:
-            logger.exception(f"Error handling the new file: {e}")
+        except Exception:
+            logger.exception("Error handling the new file")
 
     @staticmethod
     def scan_files():
@@ -109,8 +109,8 @@ class FileEventHandler(FileSystemEventHandler):
             subprocess.run(["ffmpeg", "-i", file_path, temp_file], check=True)
             os.replace(temp_file, file_path)
             logger.info(f"Video re-encoded and saved as {file_path}")
-        except Exception as e:
-            logger.exception(f"Error re-encoding video: {e}")
+        except Exception:
+            logger.exception("Error re-encoding video")
 
     @staticmethod
     def reencode_image(file_path):
@@ -120,8 +120,8 @@ class FileEventHandler(FileSystemEventHandler):
             img.save(temp_file, "PNG")
             os.replace(temp_file, file_path)
             logger.info(f"Image re-encoded and saved as {file_path}")
-        except Exception as e:
-            logger.exception(f"Error re-encoding image: {e}")
+        except Exception:
+            logger.exception("Error re-encoding image")
 
 
 def start_observer():
