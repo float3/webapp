@@ -1,5 +1,7 @@
 # webapp
 
+Archived: the site is no longer served from this code.
+
 Source of `problem.traeumerei.dev`: a Flask app that serves a random image or video from a folder. `/` picks one at random, `/<n>` serves the n-th file, `/submit` redirects to the upload share.
 
 ## Run
