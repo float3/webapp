@@ -3,7 +3,7 @@ pkgs.mkShell {
   buildInputs = with pkgs; [
     exiftool
     ffmpeg
-    python312Full
+    python312
     python312Packages.gunicorn
     python312Packages.flask
     python312Packages.watchdog
